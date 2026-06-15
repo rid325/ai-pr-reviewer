@@ -1,0 +1,16 @@
+name: review-pull-requests
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review-pull:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name : Print PR info 
+        run: python scripts/print_pr_info.py
+        
