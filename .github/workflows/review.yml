@@ -12,12 +12,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies 
-        run : python -m pip install requests 
+        run : python -m pip install requests google-generativeai
 
       - name : Print PR info 
         run: python scripts/print_pr_info.py
+  
       
       - name: Fetch PR Diffs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/fetch_pr_diff.py
