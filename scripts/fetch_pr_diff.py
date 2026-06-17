@@ -1,10 +1,10 @@
 import os 
 import json 
 import requests
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("models/gemini-1.5-flash")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 value = os.getenv("GITHUB_REPOSITORY")
 token = os.getenv("GITHUB_TOKEN")
@@ -82,11 +82,12 @@ final_prompt = reviewer_prompt + "\n\n" + all_diffs
 
 print("Sending diffs to Gemini...")
 try:
-    response = model.generate_content(
-        final_prompt,
-        generation_config={
-            "response_mime_type": "application/json"
-        }
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=final_prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+        )
     )
     
     # Step 7: Parse the JSON response safely
