@@ -90,17 +90,46 @@ try:
         )
     )
     
-    # Step 7: Parse the JSON response safely
     review_json = json.loads(response.text)
-    
+    if not review_json:    
+        print("No issues found in the PR.")
+        exit(0) 
+    github_comments = []
+    for review in review_json:
+        github_comment = {
+            "path": review["file"],
+            "line": int(review["line"]), # Ensure line is an integer
+            "side": "RIGHT",
+            "body": f"**[{review.get('severity', 'COMMENT').upper()}]** {review['comment']}"
+        }
+        github_comments.append(github_comment)
+
+    payload = {
+        "event": "COMMENT",
+        "comments": github_comments
+    }   
+
     print("\n" + "=" * 60)
     print("AI CODE REVIEW COMMENTS")
     print("=" * 60)
     print(json.dumps(review_json, indent=2))
     
+    review_url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/reviews"
+    print(f"\nPosting review to {review_url}...")
+    
+    review_response = requests.post(review_url, headers=headers, json=payload)
+    
+    if review_response.status_code == 200:
+        print("Successfully posted review!")
+    else:
+        print(f"Failed to post review. Status code: {review_response.status_code}")
+        print("GitHub API Response:")
+        print(review_response.text)
+        print("The LLM likely referenced a line outside the diff.")
+
 except json.JSONDecodeError:
     print("Error: Gemini returned invalid JSON.")
     print("Raw response:")
     print(response.text)
 except Exception as e:
-    print(f"An error occurred while calling Gemini: {e}")
+    print(f"An error occurred while calling Gemini or GitHub: {e}")
