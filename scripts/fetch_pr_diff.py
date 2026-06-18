@@ -90,17 +90,68 @@ try:
         )
     )
     
-    # Step 7: Parse the JSON response safely
     review_json = json.loads(response.text)
-    
+    if not review_json:    
+        print("No issues found in the PR.")
+        exit(0) 
+    github_comments = []
+    for review in review_json:
+        github_comment = {
+            "path": review["file"],
+            "line": int(review["line"]), 
+            "side": "RIGHT",
+            "body": f"**[{review.get('severity', 'COMMENT').upper()}]** {review['comment']}"
+        }
+        github_comments.append(github_comment)
+
+    payload = {
+        "event": "COMMENT",
+        "comments": github_comments
+    }   
+
     print("\n" + "=" * 60)
     print("AI CODE REVIEW COMMENTS")
     print("=" * 60)
     print(json.dumps(review_json, indent=2))
     
+    review_url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/reviews"
+    print(f"\nPosting review to {review_url}...")
+    
+    review_response = requests.post(review_url, headers=headers, json=payload)
+    
+    if review_response.status_code == 200:
+        print("Successfully posted inline review!")
+    elif review_response.status_code == 422:
+        print("GitHub rejected inline comments (422: Line could not be resolved).")
+        print("Falling back to a general PR comment...")
+        
+        # Build a single markdown string containing all the comments
+        fallback_body = "### 🤖 AI Code Review Comments\n\n"
+        for comment in github_comments:
+            fallback_body += f"**File:** `{comment['path']}` (Line {comment['line']})\n"
+            fallback_body += f"{comment['body']}\n\n---\n"
+            
+        fallback_payload = {
+            "body": fallback_body,
+            "event": "COMMENT"
+        }
+        
+        fallback_response = requests.post(review_url, headers=headers, json=fallback_payload)
+        
+        if fallback_response.status_code == 200:
+            print("Successfully posted fallback general review!")
+        else:
+            print(f"Failed to post fallback review. Status code: {fallback_response.status_code}")
+            print(fallback_response.text)
+            
+    else:
+        print(f"Failed to post review. Status code: {review_response.status_code}")
+        print("GitHub API Response:")
+        print(review_response.text)
+
 except json.JSONDecodeError:
     print("Error: Gemini returned invalid JSON.")
     print("Raw response:")
     print(response.text)
 except Exception as e:
-    print(f"An error occurred while calling Gemini: {e}")
+    print(f"An error occurred while calling Gemini or GitHub: {e}")
