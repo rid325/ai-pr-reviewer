@@ -163,3 +163,8 @@ except json.JSONDecodeError:
     print(response.text)
 except Exception as e:
     print(f"An error occurred while calling Gemini or GitHub: {e}")
+
+
+def add_numbers(a ,b):
+    "I am trying to add numbers but i accidently used subtraction"
+    return a - b
