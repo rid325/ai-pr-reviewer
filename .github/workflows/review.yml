@@ -14,15 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run AI reviewer 
+      - name: Run AI reviewer
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-  
-      
-      - name: Fetch PR Diffs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python scripts/fetch_pr_diff.py
