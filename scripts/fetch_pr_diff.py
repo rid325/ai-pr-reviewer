@@ -65,12 +65,17 @@ For the Output give it as a JSON schema strictly like this example:
         "file": "path/to/file",
         "line": 21,
         "severity": "high",
-        "comment": "code improvements"
+        "comment": "code improvements",
+        "suggestion": "print('this is the fixed code')"
     }}
 ]
 Severity must be one of: low, medium, high
 Do not report speculative issues.
 Only report issues you can justify from the diff.
+
+If there is a direct, actionable code fix, include it in the "suggestion" field. 
+The "suggestion" field must contain ONLY the exact replacement code for that specific line. Do not wrap it in markdown ticks inside the JSON.
+If no direct code fix is applicable, omit the "suggestion" field or leave it blank.
 
 Return ONLY valid JSON.
 Do not include markdown.
@@ -96,11 +101,15 @@ try:
         exit(0) 
     github_comments = []
     for review in review_json:
+        body_text = f"**[{review.get('severity', 'COMMENT').upper()}]** {review['comment']}"
+        if "suggestion" in review and review["suggestion"]:
+            body_text += f"\n\n```suggestion\n{review['suggestion']}\n```"
+
         github_comment = {
             "path": review["file"],
             "line": int(review["line"]), 
             "side": "RIGHT",
-            "body": f"**[{review.get('severity', 'COMMENT').upper()}]** {review['comment']}"
+            "body": body_text
         }
         github_comments.append(github_comment)
 
@@ -125,7 +134,6 @@ try:
         print("GitHub rejected inline comments (422: Line could not be resolved).")
         print("Falling back to a general PR comment...")
         
-        # Build a single markdown string containing all the comments
         fallback_body = "### 🤖 AI Code Review Comments\n\n"
         for comment in github_comments:
             fallback_body += f"**File:** `{comment['path']}` (Line {comment['line']})\n"
