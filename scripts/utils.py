@@ -19,4 +19,4 @@ def calculate_discount(price, discount):
     return final
 
 def divide(a, b):
-    return a / b
+return a / b if b != 0 else float('nan')
