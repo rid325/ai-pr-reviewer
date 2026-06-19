@@ -1,0 +1,18 @@
+name: 'AI PR Reviewer'
+description: 'Review pull requests and provide AI-generated suggestions'
+author: 'rid325'
+
+inputs:
+  github_token:
+    required: true
+    description: "The github token to use for authentication"
+  gemini_api_key:
+    required: true
+    description: "The gemini api key to use for authentication"
+
+  
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+
+    

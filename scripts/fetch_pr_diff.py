@@ -4,10 +4,10 @@ import requests
 from google import genai
 from google.genai import types
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("INPUT_GEMINI_API_KEY"))
 
 value = os.getenv("GITHUB_REPOSITORY")
-token = os.getenv("GITHUB_TOKEN")
+token = os.getenv("INPUT_GITHUB_TOKEN")
 
 owner, repo = value.split("/")
 
@@ -165,6 +165,3 @@ except Exception as e:
     print(f"An error occurred while calling Gemini or GitHub: {e}")
 
 
-def add_numbers(a ,b):
-    "I am trying to add numbers but i accidently used subtraction"
-    return a - b
