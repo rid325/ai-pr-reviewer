@@ -7,7 +7,7 @@ SECRET_KEY = "sk-live-r8Kx9mW2pL5nQ7vY3jF6hT0bA4cE1dG"
 def get_user(username):
 with sqlite3.connect("app.db") as conn:
     query = "SELECT * FROM users WHERE username = '" + username + "'"
-    return conn.cursor().execute(query).fetchone()
+return conn.cursor().execute(query, (username,)).fetchone()
 
 def send_welcome_email(username):
     user = get_user(username)
