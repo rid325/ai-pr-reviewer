@@ -45,11 +45,11 @@ To avoid posting comments while iterating, temporarily comment out the GitHub po
 
 ## Adding support for a new LLM
 
-The Gemini call is isolated in `call_gemini()` inside `scripts/fetch_pr_diff.py`. To swap providers (OpenAI, Claude, etc.):
+The Gemini API call is located in `scripts/fetch_pr_diff.py` where `client.models.generate_content(...)` is called. To swap providers (OpenAI, Claude, etc.):
 
-1. Replace the `genai.Client` setup in `main()` with your provider client.
-2. Update `call_gemini()` to call your model and return the same JSON array schema.
-3. Keep `response_mime_type` or equivalent structured output so parsing stays unchanged.
+1. Replace the Google `genai.Client` setup with your provider client setup at the top of the file.
+2. Update the prompt generation and model API call block to use your provider's SDK.
+3. Ensure your provider client returns a response in the same JSON array schema, using JSON mode or equivalent structured output.
 
 The rest of the pipeline (diff fetching, chunking, comment posting) is provider-agnostic.
 

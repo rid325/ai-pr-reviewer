@@ -32,8 +32,6 @@ response = requests.get(url, headers=headers)
 response.raise_for_status()
 files = response.json()
 
-files.sort(key=lambda f: f.get("changes", 0), reverse=True)
-
 def count_diff_lines(patch):
     count = 0
     for line in patch.splitlines():
@@ -41,10 +39,9 @@ def count_diff_lines(patch):
             count += 1
     return count
 
-diff_chunks = []
-current_chunk = ""
-current_line_count = 0
 skipped_files = []
+valid_files = []
+total_lines = 0
 
 for file in files:
     filename = file["filename"]
@@ -56,8 +53,32 @@ for file in files:
         print(f"WARNING: Skipping {filename} due to size (no patch returned by GitHub API)")
         skipped_files.append(filename)
         continue
+    valid_files.append(file)
+    total_lines += count_diff_lines(patch)
 
+print(f"Total diff lines (+ and -) in all collected patches: {total_lines}")
+
+# Sort files by changes descending
+valid_files.sort(key=lambda f: f.get("changes", 0), reverse=True)
+
+diff_chunks = []
+current_chunk = ""
+current_line_count = 0
+
+max_total_lines = 4 * max_diff_lines
+total_processed_lines = 0
+
+for file in valid_files:
+    filename = file["filename"]
+    patch = file["patch"]
     file_lines = count_diff_lines(patch)
+
+    if total_processed_lines + file_lines > max_total_lines:
+        print(f"WARNING: Skipping {filename} because adding it would exceed the total budget of {max_total_lines} lines.")
+        skipped_files.append(filename)
+        continue
+
+    total_processed_lines += file_lines
     file_diff = f"\n=== {filename} ===\n{patch}"
 
     if file_lines > max_diff_lines:
@@ -97,7 +118,7 @@ if not diff_chunks:
     exit(0)
 
 if skipped_files:
-    print(f"\nWARNING: {len(skipped_files)} file(s) skipped due to size:")
+    print(f"\nWARNING: {len(skipped_files)} file(s) skipped due to size or budget limits:")
     for skipped in skipped_files:
         print(f"  - {skipped}")
 
@@ -156,7 +177,7 @@ try:
         print("No issues found in the PR.")
         summary_body = "### 🤖 AI Review Summary\n\nNo issues found. Estimated review time saved: ~5 mins."
         if skipped_files:
-            summary_body += "\n\n**Skipped files (exceeded size limit):**\n"
+            summary_body += "\n\n**Skipped files (exceeded size or budget limits):**\n"
             for skipped in skipped_files:
                 summary_body += f"- `{skipped}`\n"
         comment_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
@@ -192,7 +213,7 @@ try:
     
     review_response = requests.post(review_url, headers=headers, json=payload)
     
-    if review_response.status_code == 200:
+    if review_response.status_code in (200, 201):
         print("Successfully posted inline review!")
     elif review_response.status_code == 422:
         print("GitHub rejected inline comments (422: Line could not be resolved).")
@@ -210,7 +231,7 @@ try:
         
         fallback_response = requests.post(review_url, headers=headers, json=fallback_payload)
         
-        if fallback_response.status_code == 200:
+        if fallback_response.status_code in (200, 201):
             print("Successfully posted fallback general review!")
         else:
             print(f"Failed to post fallback review. Status code: {fallback_response.status_code}")
@@ -239,14 +260,14 @@ try:
     if len(diff_chunks) > 1:
         summary_body += f"\n\nReviewed diff in {len(diff_chunks)} chunks."
     if skipped_files:
-        summary_body += "\n\n**Skipped files (exceeded size limit):**\n"
+        summary_body += "\n\n**Skipped files (exceeded size or budget limits):**\n"
         for skipped in skipped_files:
             summary_body += f"- `{skipped}`\n"
 
     comment_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
     print(f"\nPosting summary comment to {comment_url}...")
     summary_response = requests.post(comment_url, headers=headers, json={"body": summary_body})
-    if summary_response.status_code == 201:
+    if summary_response.status_code in (200, 201):
         print("Successfully posted PR summary comment!")
     else:
         print(f"Failed to post summary comment. Status code: {summary_response.status_code}")
@@ -258,4 +279,3 @@ except json.JSONDecodeError:
     print(response.text)
 except Exception as e:
     print(f"An error occurred while calling Gemini or GitHub: {e}")
-
