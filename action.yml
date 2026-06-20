@@ -1,4 +1,4 @@
-name: 'AI PR Reviewer'
+name: 'ReviewBot AI PR Reviewer'
 description: 'Review pull requests and provide AI-generated suggestions'
 author: 'rid325'
 
@@ -21,3 +21,7 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
+
+branding:
+  icon: 'eye'
+  color: 'blue'
