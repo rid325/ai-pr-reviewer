@@ -5,14 +5,19 @@ author: 'rid325'
 inputs:
   github_token:
     required: true
-    description: "The github token to use for authentication"
+    description: 'GitHub token with pull-requests: write permission'
   gemini_api_key:
     required: true
-    description: "The gemini api key to use for authentication"
+    description: 'Google Gemini API key for AI review'
+  ignore_patterns:
+    required: false
+    description: 'Comma-separated fnmatch patterns for files to skip (e.g. *.lock,*.generated.js,migrations/*)'
+    default: '*.lock,package-lock.json,*.generated.*'
+  max_diff_lines:
+    required: false
+    description: 'Maximum added/removed lines per Gemini API call; larger diffs are split into chunks'
+    default: '500'
 
-  
 runs:
   using: 'docker'
   image: 'Dockerfile'
-
-    
